@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Study Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #242424;
+    --border: #2e2e2e;
+    --accent: #c8f55a;
+    --accent2: #5af5c8;
+    --accent3: #f55a9b;
+    --text: #f0f0f0;
+    --muted: #777;
+    --danger: #f55a5a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; font-weight: 700; min-height: 100vh; padding: 2rem 1rem; }
+  .noise { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); opacity: 0.4; }
+  .container { max-width: 780px; margin: 0 auto; position: relative; z-index: 1; }
+
+  /* Duaa */
+  .duaa-banner { background: #141a0a; border: 1px solid #3a4a1a; border-radius: 16px; padding: 1.5rem 1.75rem; margin-bottom: 2rem; text-align: center; position: relative; overflow: hidden; }
+  .duaa-banner::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .duaa-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--accent); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 12px; font-weight: 700; }
+  .duaa-arabic { font-family: 'Amiri', serif; font-size: clamp(20px, 4vw, 28px); color: #f0f0f0; line-height: 2.2; direction: rtl; margin-bottom: 10px; }
+  .duaa-translation { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); font-weight: 400; }
+
+  /* Header */
+  header { margin-bottom: 2rem; }
+  .eyebrow { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.5rem; font-weight: 700; }
+  h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; line-height: 1.05; }
+  h1 span { color: var(--accent); }
+  .subtitle { color: var(--muted); font-size: 14px; margin-top: 0.5rem; font-family: 'DM Mono', monospace; font-weight: 700; }
+
+  /* Stats */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 2rem; }
+  .stat-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 14px; padding: 1rem 1.25rem; position: relative; overflow: hidden; }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .stat-card.green::before { background: var(--accent); }
+  .stat-card.teal::before { background: var(--accent2); }
+  .stat-card.pink::before { background: var(--accent3); }
+  .stat-card.red::before { background: var(--danger); }
+  .stat-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; font-weight: 700; }
+  .stat-val { font-size: 28px; font-weight: 800; }
+  .stat-card.green .stat-val { color: var(--accent); }
+  .stat-card.teal .stat-val { color: var(--accent2); }
+  .stat-card.pink .stat-val { color: var(--accent3); }
+  .stat-card.red .stat-val { color: var(--danger); }
+
+  /* Tabs */
+  .tabs-wrapper { overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+  .tabs-wrapper::-webkit-scrollbar { display: none; }
+  .tabs { display: inline-flex; gap: 4px; border-bottom: 2px solid var(--border); width: 100%; min-width: max-content; }
+  .tab { padding: 10px 16px; font-size: 13px; font-weight: 800; font-family: 'Syne', sans-serif; color: var(--muted); cursor: pointer; border-radius: 10px 10px 0 0; border: 0.5px solid transparent; border-bottom: none; transition: all 0.15s; white-space: nowrap; position: relative; bottom: -2px; background: transparent; }
+  .tab:hover { color: var(--text); background: var(--surface); border-color: var(--border); }
+  .tab.active { color: #0f0f0f; background: var(--accent); border-color: var(--accent); }
+  .tab.add-tab { color: var(--accent); border: 0.5px dashed #3a4a1a; border-bottom: none; }
+  .tab.add-tab:hover { background: var(--surface); }
+  .tab.add-tab.active { color: #0f0f0f; background: var(--accent); border-color: var(--accent); }
+  .tab-pct { font-size: 10px; font-weight: 800; margin-left: 5px; opacity: 0.7; }
+
+  /* Panels */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Add form */
+  .add-form { background: var(--surface); border: 0.5px solid var(--border); border-radius: 0 14px 14px 14px; padding: 1.5rem; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .log-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.08em; }
+  input { background: var(--surface2); border: 0.5px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; padding: 10px 12px; width: 100%; outline: none; transition: border-color 0.2s; }
+  input:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); font-weight: 400; }
+  .btn { background: var(--accent); color: #0f0f0f; border: none; border-radius: 8px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; padding: 10px 20px; cursor: pointer; transition: opacity 0.15s, transform 0.1s; width: 100%; }
+  .btn:hover { opacity: 0.88; }
+  .btn:active { transform: scale(0.98); }
+  .btn-danger { background: transparent; color: var(--danger); border: 0.5px solid var(--danger); font-size: 12px; font-weight: 800; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: 'DM Mono', monospace; transition: background 0.15s; width: auto; }
+  .btn-danger:hover { background: rgba(245,90,90,0.1); }
+  .btn-sm { background: var(--surface2); color: var(--text); border: 0.5px solid var(--border); font-size: 12px; font-weight: 800; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: 'DM Mono', monospace; transition: background 0.15s; width: auto; }
+  .btn-sm:hover { background: var(--border); }
+
+  /* Subject card */
+  .subject-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 0 16px 16px 16px; overflow: hidden; }
+  .subject-top { padding: 1.5rem 1.5rem 1rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .subject-name { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .subject-meta { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); font-weight: 700; }
+  .subject-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+  .progress-section { padding: 0 1.5rem 1.25rem; }
+  .progress-labels { display: flex; justify-content: space-between; font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 800; color: var(--muted); margin-bottom: 8px; }
+  .progress-track { background: var(--surface2); border-radius: 999px; height: 8px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 999px; transition: width 0.5s cubic-bezier(.4,0,.2,1); }
+  .subject-stats { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 0.5px solid var(--border); }
+  .subject-stat { padding: 1rem 1.5rem; text-align: center; border-right: 0.5px solid var(--border); }
+  .subject-stat:last-child { border-right: none; }
+  .subject-stat-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; font-weight: 700; }
+  .subject-stat-val { font-size: 18px; font-weight: 800; }
+
+  /* Log/History panels */
+  .log-panel { display: none; padding: 1.25rem 1.5rem; border-top: 0.5px solid var(--border); background: var(--surface2); }
+  .log-panel.open { display: block; }
+  .log-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: end; }
+  .section-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 12px; font-weight: 700; }
+  .history-panel { display: none; padding: 1.25rem 1.5rem; border-top: 0.5px solid var(--border); }
+  .history-panel.open { display: block; }
+  .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; font-weight: 700; }
+  .history-item:last-child { border-bottom: none; }
+  .history-date { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); font-weight: 700; }
+  .history-info { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .history-tag { font-family: 'DM Mono', monospace; font-size: 11px; padding: 3px 8px; border-radius: 4px; background: var(--surface2); color: var(--muted); font-weight: 700; }
+  .history-tag.acc { color: var(--accent2); background: rgba(90,245,200,0.08); }
+
+  /* ===== POMODORO TIMER - iPhone Style ===== */
+  .pomo-panel { display: none; border-top: 0.5px solid var(--border); background: #111; padding: 2rem 1.5rem 1.75rem; }
+  .pomo-panel.open { display: block; }
+
+  .pomo-mode-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 2rem; }
+  .pomo-mode-btn {
+    font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 700;
+    padding: 7px 18px; border-radius: 20px; border: none; cursor: pointer;
+    transition: all 0.2s; background: #222; color: var(--muted);
+  }
+  .pomo-mode-btn.active-focus { background: var(--accent); color: #0f0f0f; }
+  .pomo-mode-btn.active-break { background: var(--accent2); color: #0a1a14; }
+
+  /* Ring */
+  .pomo-ring-wrap { display: flex; justify-content: center; margin-bottom: 2rem; }
+  .pomo-ring-svg { width: 220px; height: 220px; }
+  .pomo-ring-bg { fill: none; stroke: #222; stroke-width: 10; }
+  .pomo-ring-fill { fill: none; stroke-width: 10; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 110px 110px; transition: stroke-dashoffset 0.5s linear, stroke 0.4s; }
+
+  .pomo-time-display {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .pomo-ring-container { position: relative; width: 220px; height: 220px; }
+  .pomo-time-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 52px;
+    font-weight: 700;
+    letter-spacing: -2px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .pomo-time-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 700;
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+  .pomo-round-dots { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
+  .pomo-dot { width: 7px; height: 7px; border-radius: 50%; background: #333; transition: background 0.3s; }
+  .pomo-dot.done { background: var(--accent); }
+
+  /* iPhone-style buttons */
+  .pomo-controls { display: flex; justify-content: center; align-items: center; gap: 28px; margin-bottom: 1.25rem; }
+  .pomo-btn-reset {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: #2a2a2a; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .pomo-btn-reset:hover { background: #333; }
+  .pomo-btn-reset svg { width: 20px; height: 20px; fill: var(--muted); }
+
+  .pomo-btn-main {
+    width: 76px; height: 76px; border-radius: 50%;
+    background: var(--accent); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.1s, opacity 0.15s;
+    box-shadow: 0 0 0 6px rgba(200,245,90,0.1);
+  }
+  .pomo-btn-main:active { transform: scale(0.94); }
+  .pomo-btn-main.running { background: #2a2a2a; box-shadow: none; }
+  .pomo-btn-main svg { width: 28px; height: 28px; }
+  .pomo-btn-main .play-icon { fill: #0f0f0f; }
+  .pomo-btn-main.running .play-icon { fill: var(--accent); }
+
+  .pomo-btn-skip {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: #2a2a2a; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .pomo-btn-skip:hover { background: #333; }
+  .pomo-btn-skip svg { width: 20px; height: 20px; fill: var(--muted); }
+
+  .pomo-status { text-align: center; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: 0.1em; }
+
+  .empty-state { text-align: center; padding: 3rem; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700; background: var(--surface); border-radius: 0 16px 16px 16px; border: 0.5px solid var(--border); }
+
+  @media (max-width: 500px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .log-grid { grid-template-columns: 1fr 1fr; }
+    .subject-stats { grid-template-columns: 1fr 1fr; }
+    .subject-stats .subject-stat:nth-child(2) { border-right: none; }
+    .subject-stats .subject-stat:nth-child(3) { border-top: 0.5px solid var(--border); grid-column: span 2; }
+  }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="container">
+
+  <div class="duaa-banner">
+    <div class="duaa-label">دعاء قبل الدراسة</div>
+    <div class="duaa-arabic">رَبِّ زِدْنِي عِلْمًا، وَارْزُقْنِي فَهْمًا</div>
+    <div class="duaa-translation">"My Lord, increase me in knowledge, and grant me understanding."</div>
+  </div>
+
+  <header>
+    <div class="eyebrow">// personal dashboard</div>
+    <h1>My Study<br><span>Progress</span></h1>
+    <div class="subtitle" id="greeting">Loading...</div>
+  </header>
+
+  <div class="stats-row">
+    <div class="stat-card green"><div class="stat-label">Lessons Done</div><div class="stat-val" id="totalDone">0</div></div>
+    <div class="stat-card red"><div class="stat-label">Lessons Left</div><div class="stat-val" id="totalLeft">0</div></div>
+    <div class="stat-card teal"><div class="stat-label">Accuracy Avg</div><div class="stat-val" id="totalAcc">—</div></div>
+    <div class="stat-card pink"><div class="stat-label">Time Studied</div><div class="stat-val" id="totalTime">0m</div></div>
+  </div>
+
+  <div class="tabs-wrapper"><div class="tabs" id="tabsBar"></div></div>
+  <div id="panelsContainer"></div>
+</div>
+
+<script>
+let db = JSON.parse(localStorage.getItem('studydb4') || '{"subjects":[],"activeTab":"add"}');
+function save() { localStorage.setItem('studydb4', JSON.stringify(db)); }
+
+// ---- Pomodoro state (single global timer) ----
+const POMO = {
+  FOCUS: 25 * 60,
+  BREAK: 5 * 60,
+  state: 'idle',   // idle | running | paused
+  mode: 'focus',   // focus | break
+  remaining: 25 * 60,
+  rounds: 0,
+  total: 4,
+  activeSubjectId: null,
+  _interval: null,
+  _ringCirc: 0,
+};
+
+function pomoTick() {
+  if (POMO.state !== 'running') return;
+  POMO.remaining--;
+  if (POMO.remaining <= 0) {
+    pomoFinish();
+  } else {
+    pomoUpdateUI();
+  }
+}
+
+function pomoFinish() {
+  clearInterval(POMO._interval);
+  POMO._interval = null;
+  // Play a beep
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    for (let i = 0; i < 3; i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.35);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.35 + 0.3);
+      osc.start(ctx.currentTime + i * 0.35);
+      osc.stop(ctx.currentTime + i * 0.35 + 0.3);
+    }
+  } catch(e) {}
+
+  if (POMO.mode === 'focus') {
+    POMO.rounds++;
+    if (POMO.rounds >= POMO.total) {
+      POMO.state = 'idle'; POMO.mode = 'focus'; POMO.rounds = 0; POMO.remaining = POMO.FOCUS;
+    } else {
+      POMO.mode = 'break'; POMO.remaining = POMO.BREAK; POMO.state = 'idle';
+    }
+  } else {
+    POMO.mode = 'focus'; POMO.remaining = POMO.FOCUS; POMO.state = 'idle';
+  }
+  pomoUpdateUI();
+}
+
+function pomoStart(subjectId) {
+  POMO.activeSubjectId = subjectId;
+  if (POMO.state === 'running') { POMO.state = 'paused'; clearInterval(POMO._interval); POMO._interval = null; }
+  else {
+    POMO.state = 'running';
+    POMO._interval = setInterval(pomoTick, 1000);
+  }
+  pomoUpdateUI();
+}
+
+function pomoReset(subjectId) {
+  clearInterval(POMO._interval); POMO._interval = null;
+  POMO.state = 'idle'; POMO.mode = 'focus'; POMO.remaining = POMO.FOCUS; POMO.rounds = 0;
+  POMO.activeSubjectId = subjectId;
+  pomoUpdateUI();
+}
+
+function pomoSetMode(mode, subjectId) {
+  clearInterval(POMO._interval); POMO._interval = null;
+  POMO.state = 'idle'; POMO.mode = mode;
+  POMO.remaining = mode === 'focus' ? POMO.FOCUS : POMO.BREAK;
+  POMO.activeSubjectId = subjectId;
+  pomoUpdateUI();
+}
+
+function pomoSkip(subjectId) {
+  clearInterval(POMO._interval); POMO._interval = null;
+  POMO.state = 'idle';
+  if (POMO.mode === 'focus') { POMO.rounds = Math.min(POMO.rounds + 1, POMO.total); POMO.mode = 'break'; POMO.remaining = POMO.BREAK; }
+  else { POMO.mode = 'focus'; POMO.remaining = POMO.FOCUS; }
+  POMO.activeSubjectId = subjectId;
+  pomoUpdateUI();
+}
+
+function pomoUpdateUI() {
+  const el = document.getElementById('pomo_inner');
+  if (!el) return;
+  const mins = Math.floor(POMO.remaining / 60);
+  const secs = POMO.remaining % 60;
+  const timeStr = String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0');
+
+  const total = POMO.mode === 'focus' ? POMO.FOCUS : POMO.BREAK;
+  const frac = POMO.remaining / total;
+  const circ = 2 * Math.PI * 95;
+  const offset = circ * (1 - frac);
+  const ringColor = POMO.mode === 'focus' ? '#c8f55a' : '#5af5c8';
+  const modeLabel = POMO.mode === 'focus' ? 'FOCUS' : 'BREAK';
+  const isRunning = POMO.state === 'running';
+
+  const dots = Array.from({length: POMO.total}, (_,i) =>
+    `<div class="pomo-dot${i < POMO.rounds ? ' done' : ''}"></div>`).join('');
+
+  el.innerHTML = `
+    <div class="pomo-mode-row">
+      <button class="pomo-mode-btn${POMO.mode==='focus'?' active-focus':''}" onclick="pomoSetMode('focus',${POMO.activeSubjectId})">Focus 25m</button>
+      <button class="pomo-mode-btn${POMO.mode==='break'?' active-break':''}" onclick="pomoSetMode('break',${POMO.activeSubjectId})">Break 5m</button>
+    </div>
+    <div class="pomo-ring-wrap">
+      <div class="pomo-ring-container">
+        <svg class="pomo-ring-svg" viewBox="0 0 220 220">
+          <circle class="pomo-ring-bg" cx="110" cy="110" r="95"/>
+          <circle class="pomo-ring-fill" cx="110" cy="110" r="95"
+            stroke="${ringColor}"
+            stroke-dasharray="${circ}"
+            stroke-dashoffset="${offset}"/>
+        </svg>
+        <div class="pomo-time-display">
+          <div class="pomo-time-num">${timeStr}</div>
+          <div class="pomo-time-label">${modeLabel}</div>
+          <div class="pomo-round-dots">${dots}</div>
+        </div>
+      </div>
+    </div>
+    <div class="pomo-controls">
+      <button class="pomo-btn-reset" onclick="pomoReset(${POMO.activeSubjectId})" title="Reset">
+        <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+      </button>
+      <button class="pomo-btn-main${isRunning?' running':''}" onclick="pomoStart(${POMO.activeSubjectId})">
+        ${isRunning
+          ? `<svg viewBox="0 0 24 24"><rect class="play-icon" x="6" y="4" width="4" height="16"/><rect class="play-icon" x="14" y="4" width="4" height="16"/></svg>`
+          : `<svg viewBox="0 0 24 24"><polygon class="play-icon" points="5,3 19,12 5,21"/></svg>`}
+      </button>
+      <button class="pomo-btn-skip" onclick="pomoSkip(${POMO.activeSubjectId})" title="Skip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 4 15 12 5 20"/><line x1="19" y1="4" x2="19" y2="20"/></svg>
+      </button>
+    </div>
+    <div class="pomo-status">${isRunning ? 'Timer running...' : POMO.state==='paused' ? 'Paused' : 'Ready'} &nbsp;·&nbsp; Round ${POMO.rounds + 1} of ${POMO.total}</div>
+  `;
+}
+
+// ---- App logic ----
+function getColor(pct) {
+  if (pct >= 80) return '#c8f55a';
+  if (pct >= 50) return '#5af5c8';
+  if (pct >= 25) return '#f5c85a';
+  return '#f55a9b';
+}
+function formatTime(mins) {
+  if (!mins) return '0m';
+  if (mins < 60) return mins + 'm';
+  return Math.floor(mins/60) + 'h ' + (mins%60) + 'm';
+}
+function today() { return new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}); }
+
+function updateStats() {
+  let done = 0, total = 0, accNums = [], timeTotal = 0;
+  db.subjects.forEach(s => {
+    done += s.lessonsCompleted; total += s.totalLessons;
+    s.sessions.forEach(sess => { if (sess.accuracy) accNums.push(sess.accuracy); timeTotal += sess.duration || 0; });
+  });
+  document.getElementById('totalDone').textContent = done;
+  document.getElementById('totalLeft').textContent = Math.max(0, total - done);
+  document.getElementById('totalAcc').textContent = accNums.length ? Math.round(accNums.reduce((a,b)=>a+b,0)/accNums.length) + '%' : '—';
+  document.getElementById('totalTime').textContent = formatTime(timeTotal);
+}
+
+function setTab(tabId) { db.activeTab = tabId; save(); render(); }
+
+function addSubject() {
+  const name = document.getElementById('subjectName').value.trim();
+  const total = parseInt(document.getElementById('totalLessons').value);
+  if (!name || !total || total < 1) return alert('Please fill in subject name and number of lessons.');
+  const id = Date.now();
+  db.subjects.push({ id, name, totalLessons: total, lessonsCompleted: 0, sessions: [], showLog: false, showHistory: false, showPomo: false });
+  db.activeTab = 'subject_' + id;
+  save(); render();
+}
+
+function deleteSubject(id) {
+  if (!confirm('Delete this subject?')) return;
+  db.subjects = db.subjects.filter(s => s.id !== id);
+  db.activeTab = db.subjects.length ? 'subject_' + db.subjects[0].id : 'add';
+  save(); render();
+}
+
+function logSession(id) {
+  const lessons = parseInt(document.getElementById('log_lessons_' + id).value) || 0;
+  const accuracy = parseInt(document.getElementById('log_acc_' + id).value) || null;
+  const duration = parseInt(document.getElementById('log_dur_' + id).value) || 0;
+  if (!lessons && !duration) return alert('Enter at least lessons done or time.');
+  const s = db.subjects.find(x => x.id === id);
+  s.lessonsCompleted = Math.min(s.totalLessons, s.lessonsCompleted + lessons);
+  s.sessions.unshift({ date: today(), lessons, accuracy, duration });
+  save(); render();
+}
+
+function toggleLog(id) {
+  const s = db.subjects.find(x => x.id === id);
+  s.showLog = !s.showLog; if (s.showLog) { s.showHistory = false; s.showPomo = false; }
+  save(); render();
+}
+function toggleHistory(id) {
+  const s = db.subjects.find(x => x.id === id);
+  s.showHistory = !s.showHistory; if (s.showHistory) { s.showLog = false; s.showPomo = false; }
+  save(); render();
+}
+function togglePomo(id) {
+  const s = db.subjects.find(x => x.id === id);
+  s.showPomo = !s.showPomo; if (s.showPomo) { s.showLog = false; s.showHistory = false; POMO.activeSubjectId = id; }
+  save(); render();
+  if (s.showPomo) pomoUpdateUI();
+}
+
+function render() {
+  updateStats();
+  const tabsBar = document.getElementById('tabsBar');
+  let tabsHtml = '';
+  db.subjects.forEach(s => {
+    const pct = s.totalLessons ? Math.round((s.lessonsCompleted / s.totalLessons) * 100) : 0;
+    const isActive = db.activeTab === 'subject_' + s.id;
+    tabsHtml += `<div class="tab${isActive?' active':''}" onclick="setTab('subject_${s.id}')">${s.name}<span class="tab-pct">${pct}%</span></div>`;
+  });
+  tabsHtml += `<div class="tab add-tab${db.activeTab==='add'?' active':''}" onclick="setTab('add')">+ New</div>`;
+  tabsBar.innerHTML = tabsHtml;
+
+  const container = document.getElementById('panelsContainer');
+  let html = `<div class="panel${db.activeTab==='add'?' active':''}">
+    <div class="add-form">
+      <div class="section-label">Add a new subject</div>
+      <div class="form-grid">
+        <div><div class="log-label">Subject name</div><input type="text" id="subjectName" placeholder="e.g. Islamic Education"></div>
+        <div><div class="log-label">Total lessons</div><input type="number" id="totalLessons" placeholder="e.g. 10" min="1"></div>
+      </div>
+      <button class="btn" onclick="addSubject()">+ Add Subject</button>
+    </div>
+    ${db.subjects.length===0?'<div class="empty-state">No subjects yet.<br>Add your first subject above!</div>':''}
+  </div>`;
+
+  db.subjects.forEach(s => {
+    const isActive = db.activeTab === 'subject_' + s.id;
+    const pct = s.totalLessons ? Math.round((s.lessonsCompleted / s.totalLessons) * 100) : 0;
+    const color = getColor(pct);
+    const left = Math.max(0, s.totalLessons - s.lessonsCompleted);
+    const accNums = s.sessions.filter(x => x.accuracy).map(x => x.accuracy);
+    const avgAcc = accNums.length ? Math.round(accNums.reduce((a,b)=>a+b,0)/accNums.length) + '%' : '—';
+    const totalTime = s.sessions.reduce((a,b) => a + (b.duration||0), 0);
+
+    html += `<div class="panel${isActive?' active':''}">
+      <div class="subject-card">
+        <div class="subject-top">
+          <div>
+            <div class="subject-name">${s.name}</div>
+            <div class="subject-meta">${s.lessonsCompleted} / ${s.totalLessons} lessons &nbsp;·&nbsp; ${left} left</div>
+          </div>
+          <div class="subject-actions">
+            <button class="btn-sm" onclick="togglePomo(${s.id})" style="${s.showPomo?'background:var(--accent);color:#0f0f0f;border-color:var(--accent);':''}">🍅 Pomodoro</button>
+            <button class="btn-sm" onclick="toggleHistory(${s.id})">${s.showHistory?'Hide':'History'}</button>
+            <button class="btn-sm" onclick="toggleLog(${s.id})">${s.showLog?'Cancel':'+ Log'}</button>
+            <button class="btn-danger" onclick="deleteSubject(${s.id})">✕</button>
+          </div>
+        </div>
+        <div class="progress-section">
+          <div class="progress-labels"><span>Progress</span><span style="color:${color};">${pct}%</span></div>
+          <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${color};"></div></div>
+        </div>
+        <div class="subject-stats">
+          <div class="subject-stat"><div class="subject-stat-label">Accuracy avg</div><div class="subject-stat-val" style="color:var(--accent2);">${avgAcc}</div></div>
+          <div class="subject-stat"><div class="subject-stat-label">Time studied</div><div class="subject-stat-val" style="color:var(--accent3);">${formatTime(totalTime)}</div></div>
+          <div class="subject-stat"><div class="subject-stat-label">Sessions</div><div class="subject-stat-val">${s.sessions.length}</div></div>
+        </div>
+
+        <div class="pomo-panel${s.showPomo?' open':''}">
+          <div class="section-label">Pomodoro Timer</div>
+          <div id="pomo_inner"></div>
+        </div>
+
+        <div class="log-panel${s.showLog?' open':''}">
+          <div class="section-label">Log a session</div>
+          <div class="log-grid">
+            <div><div class="log-label">Lessons done</div><input type="number" id="log_lessons_${s.id}" placeholder="e.g. 2" min="0"></div>
+            <div><div class="log-label">Accuracy %</div><input type="number" id="log_acc_${s.id}" placeholder="e.g. 85" min="0" max="100"></div>
+            <div><div class="log-label">Duration (min)</div><input type="number" id="log_dur_${s.id}" placeholder="e.g. 30" min="0"></div>
+            <div><div class="log-label">&nbsp;</div><button class="btn" style="padding:10px;" onclick="logSession(${s.id})">Save</button></div>
+          </div>
+        </div>
+
+        <div class="history-panel${s.showHistory?' open':''}">
+          <div class="section-label">Session history</div>
+          ${s.sessions.length===0
+            ? '<div style="color:var(--muted);font-size:13px;font-family:\'DM Mono\',monospace;font-weight:700;">No sessions yet.</div>'
+            : s.sessions.map(sess=>`
+              <div class="history-item">
+                <span class="history-date">${sess.date}</span>
+                <div class="history-info">
+                  <span class="history-tag">+${sess.lessons} lessons</span>
+                  ${sess.accuracy?`<span class="history-tag acc">${sess.accuracy}% acc</span>`:''}
+                  ${sess.duration?`<span class="history-tag">${formatTime(sess.duration)}</span>`:''}
+                </div>
+              </div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  container.innerHTML = html;
+
+  // If pomo was open, re-inject UI
+  const activeSubj = db.subjects.find(s => s.showPomo);
+  if (activeSubj) { POMO.activeSubjectId = activeSubj.id; pomoUpdateUI(); }
+}
+
+const h = new Date().getHours();
+const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+document.getElementById('greeting').textContent = greet + ' — بسم الله، يلا نذاكر 💪';
+
+render();
+</script>
+</body>
+</html>
